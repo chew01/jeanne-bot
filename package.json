@@ -1,0 +1,29 @@
+{
+  "name": "jeanne-bot",
+  "version": "1.0.0",
+  "description": "Discord bot programmed using the Discord.js library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chew01/jeanne-bot.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/chew01/jeanne-bot/issues"
+  },
+  "homepage": "https://github.com/chew01/jeanne-bot#readme",
+  "dependencies": {
+    "discord.js": "^13.6.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.9.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-import": "^2.25.4",
+    "prettier": "^2.5.1"
+  }
+}
