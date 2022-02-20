@@ -3,13 +3,12 @@
 const fs = require('fs');
 const { Client, Intents, Collection } = require('discord.js');
 require('dotenv').config();
+require('./data/sequelize');
 
 const client = new Client({
   intents: [Intents.FLAGS.GUILDS],
   presence: { activities: [{ name: 'with Discord poggies', type: 'PLAYING' }] },
 });
-
-require('./sequelize');
 
 // Command handler
 client.commands = new Collection();

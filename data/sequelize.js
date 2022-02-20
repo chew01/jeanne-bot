@@ -30,6 +30,34 @@ const Draw = sequelize.define('draw', {
   },
 });
 
+const Reminder = sequelize.define('reminder', {
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  scheduledTime: {
+    type: DataTypes.TIME,
+    allowNull: false,
+  },
+  createdTime: {
+    type: DataTypes.TIME,
+    allowNull: false,
+  },
+  message: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  timeoutId: {
+    type: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
+  channelId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+});
+
 sequelize.sync();
 
 (async () => {
@@ -41,4 +69,4 @@ sequelize.sync();
   }
 })();
 
-module.exports = { Ticket, Draw };
+module.exports = { Ticket, Draw, Reminder };

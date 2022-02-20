@@ -1,7 +1,7 @@
 /* eslint-disable prefer-template */
 const { MessageEmbed } = require('discord.js');
 const _ = require('lodash');
-const { Draw } = require('../sequelize');
+const { Draw } = require('../data/sequelize');
 
 module.exports = {
   name: 'draw',

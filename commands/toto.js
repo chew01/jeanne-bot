@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed } = require('discord.js');
-const { Ticket } = require('../sequelize');
+const { Ticket } = require('../data/sequelize');
 
 module.exports = {
   data: new SlashCommandBuilder()

@@ -1,13 +1,18 @@
+const { MessageEmbed, MessageButton, MessageActionRow } = require('discord.js');
 const { SlashCommandBuilder } = require('@discordjs/builders');
+
+const { v4: uuidv4 } = require('uuid');
 const dayjs = require('dayjs');
 const customParseFormat = require('dayjs/plugin/customParseFormat');
 const relativeTime = require('dayjs/plugin/relativeTime');
-const { MessageEmbed } = require('discord.js');
-const { v4: uuidv4 } = require('uuid');
-const timeouts = require('../timeouts');
+const calendar = require('dayjs/plugin/calendar');
+
+const { reminderTimeouts } = require('../data/timeouts');
+const { Reminder } = require('../data/sequelize');
 
 dayjs.extend(customParseFormat);
 dayjs.extend(relativeTime);
+dayjs.extend(calendar);
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -37,6 +42,11 @@ module.exports = {
               'Set the date for your reminder in DD/MM/YY format. Leave blank if meant for today.'
             )
         )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('list')
+        .setDescription("Receive a list of all the reminders you've set.")
     ),
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
@@ -59,12 +69,12 @@ module.exports = {
         });
       }
 
-      const datetime = dayjs(
+      const scheduledTime = dayjs(
         `${dateRaw} ${timeRaw}`,
         dateRaw ? 'DD/MM/YY HHmm' : 'HHmm'
-      );
-      const now = dayjs();
-      const duration = datetime - now;
+      ).toDate();
+      const createdTime = Date.now();
+      const duration = scheduledTime - createdTime;
 
       if (duration < 0) {
         return interaction.reply({
@@ -73,33 +83,210 @@ module.exports = {
           ephemeral: true,
         });
       }
+      if (duration <= 3000) {
+        return interaction.reply({
+          content:
+            '**You asked for a reminder, you got it!** Reminders cannot be set less than 3 seconds in advance.',
+          ephemeral: true,
+        });
+      }
 
-      const reminder = interaction.options.getString('reminder');
+      const message = interaction.options.getString('reminder');
       const userId = interaction.user.id;
-      const channel = interaction.client.channels.cache.get(
-        interaction.channelId
-      );
-      const datetimeJS = datetime.toDate();
+      const { channelId } = interaction;
+      const channel = interaction.client.channels.cache.get(channelId);
       const timeoutId = uuidv4();
 
       const messageEmbed = new MessageEmbed()
         .setTitle('Hey! Your reminder is here!')
-        .setDescription(`You requested a reminder ${dayjs(now).fromNow()}.`)
-        .addField('Description', reminder);
+        .setDescription(
+          `You requested a reminder ${dayjs(createdTime).from(scheduledTime)}.`
+        )
+        .addField('Description', message);
 
-      timeouts[timeoutId] = setTimeout(() => {
-        channel.send({
-          content: `Guess what, <@${userId}>?`,
-          embeds: [messageEmbed],
+      try {
+        reminderTimeouts[timeoutId] = setTimeout(() => {
+          channel.send({
+            content: `Guess what, <@${userId}>?`,
+            embeds: [messageEmbed],
+          });
+
+          Reminder.destroy({
+            where: { timeoutId },
+          });
+        }, duration);
+
+        await Reminder.create({
+          userId,
+          scheduledTime,
+          createdTime,
+          message,
+          timeoutId,
+          channelId,
         });
-      }, duration);
 
-      return interaction.reply({
-        content: `Added a new reminder! It will come ${dayjs(
-          datetime
-        ).fromNow()}`,
-        ephemeral: true,
+        return interaction.reply({
+          content: `Added a new reminder! It will come ${dayjs(
+            scheduledTime
+          ).from(createdTime)}`,
+          ephemeral: true,
+        });
+      } catch (error) {
+        return interaction.reply({
+          content: 'Error setting reminder!',
+          ephemeral: true,
+        });
+      }
+    }
+    if (subcommand === 'list') {
+      const remindersMadeByInteractionUser = await Reminder.findAll({
+        where: {
+          userId: interaction.user.id,
+        },
+        order: [['createdAt', 'ASC']],
       });
+      if (remindersMadeByInteractionUser.length === 0) {
+        return interaction.reply({
+          content: "You haven't set any reminders!",
+          ephemeral: true,
+        });
+      }
+
+      const previousButton = new MessageButton()
+        .setCustomId('previousbtn')
+        .setLabel('Previous')
+        .setStyle('SECONDARY')
+        .setEmoji('⏪');
+      const deleteButton = new MessageButton()
+        .setCustomId('deletebtn')
+        .setLabel('Delete')
+        .setStyle('DANGER')
+        .setEmoji('🗑');
+      const nextButton = new MessageButton()
+        .setCustomId('nextbtn')
+        .setLabel('Next')
+        .setStyle('SECONDARY')
+        .setEmoji('⏩');
+      const buttonRow = new MessageActionRow().addComponents(
+        previousButton,
+        deleteButton,
+        nextButton
+      );
+
+      const pages = [];
+      let page = 0;
+
+      remindersMadeByInteractionUser.forEach((reminder) => {
+        const formatted = dayjs(reminder.scheduledTime).calendar(null, {
+          sameDay: '[Today at] h:mm A',
+          nextDay: '[Tomorrow at] h:mm A',
+          nextWeek: 'dddd [at] h:mm A',
+          lastDay: '[Yesterday at] h:mm A',
+          lastWeek: '[Last] dddd [at] h:mm A',
+          sameElse: 'DD/MM/YYYY',
+        });
+        const embed = new MessageEmbed()
+          .setTitle('Reminders')
+          .setDescription('Here are your reminders')
+          .addFields(
+            { name: 'Message', value: reminder.message },
+            { name: 'Scheduled Time', value: formatted }
+          );
+        pages.push(embed);
+      });
+
+      if (interaction.deferred === false) {
+        await interaction.deferReply();
+      }
+
+      const currentPage = await interaction.editReply({
+        embeds: [
+          pages[page].setFooter({
+            text: `Entry ${page + 1} / ${pages.length}`,
+          }),
+        ],
+        components: [buttonRow],
+        fetchReply: true,
+      });
+      const filter = (i) =>
+        i.user.id === interaction.user.id &&
+        (i.customId === 'previousbtn' ||
+          i.customId === 'deletebtn' ||
+          i.customId === 'nextbtn');
+      const collector = await currentPage.createMessageComponentCollector({
+        filter,
+        time: 60000,
+      });
+
+      collector.on('collect', async (i) => {
+        const { timeoutId } = remindersMadeByInteractionUser[page];
+
+        switch (i.customId) {
+          case 'previousbtn':
+            page = page > 0 ? (page -= 1) : pages.length - 1;
+            break;
+          case 'nextbtn':
+            page = page + 1 < pages.length ? (page += 1) : 0;
+            break;
+          case 'deletebtn':
+            if (pages.length === 0) {
+              break;
+            }
+
+            clearTimeout(reminderTimeouts[timeoutId]);
+            Reminder.destroy({
+              where: {
+                timeoutId,
+              },
+            });
+            pages.splice(page, 1);
+
+            if (page === pages.length) {
+              page -= 1;
+            }
+            break;
+          default:
+            break;
+        }
+        await i.deferUpdate();
+        if (pages.length > 0) {
+          await i.editReply({
+            embeds: [
+              pages[page].setFooter({
+                text: `Entry ${page + 1} / ${pages.length}`,
+              }),
+            ],
+            components: [buttonRow],
+          });
+          collector.resetTimer();
+        } else {
+          await i.editReply({
+            content: 'There are no more reminders!',
+            embeds: [],
+            components: [],
+          });
+        }
+      });
+
+      collector.on('end', (_, reason) => {
+        if (reason === 'time') {
+          const disabledRow = new MessageActionRow().addComponents(
+            previousButton.setDisabled(true),
+            deleteButton.setDisabled(true),
+            nextButton.setDisabled(true)
+          );
+          currentPage.edit({
+            embeds: [
+              pages[page].setFooter({
+                text: `Entry ${page + 1} / ${pages.length}`,
+              }),
+            ],
+            components: [disabledRow],
+          });
+        }
+      });
+
+      return currentPage;
     }
     return interaction.reply('No such subcommand!');
   },
