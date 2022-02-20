@@ -6,6 +6,7 @@ const dayjs = require('dayjs');
 const customParseFormat = require('dayjs/plugin/customParseFormat');
 const relativeTime = require('dayjs/plugin/relativeTime');
 const calendar = require('dayjs/plugin/calendar');
+const localizedFormat = require('dayjs/plugin/localizedFormat');
 
 const { reminderTimeouts } = require('../data/timeouts');
 const { Reminder } = require('../data/sequelize');
@@ -13,6 +14,7 @@ const { Reminder } = require('../data/sequelize');
 dayjs.extend(customParseFormat);
 dayjs.extend(relativeTime);
 dayjs.extend(calendar);
+dayjs.extend(localizedFormat);
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -98,16 +100,25 @@ module.exports = {
       const timeoutId = uuidv4();
 
       const messageEmbed = new MessageEmbed()
-        .setTitle('Hey! Your reminder is here!')
-        .setDescription(
-          `You requested a reminder ${dayjs(createdTime).from(scheduledTime)}.`
+        .setTitle('✅ Reminder! ✅')
+        .setColor('#ff62bb')
+        .setThumbnail(
+          'https://c.tenor.com/676zsRffINcAAAAi/kiryu-coco-alarm.gif'
         )
-        .addField('Description', message);
+        .setFooter({
+          text: `You created this reminder on ${dayjs(createdTime).format(
+            'llll'
+          )} (${dayjs(createdTime).from(scheduledTime)})`,
+        })
+        .addField(
+          `${dayjs(scheduledTime).format('llll')}`,
+          `\`\`\`fix\n${message}\n\`\`\``
+        );
 
       try {
         reminderTimeouts[timeoutId] = setTimeout(() => {
           channel.send({
-            content: `Guess what, <@${userId}>?`,
+            content: `<@${userId}>`,
             embeds: [messageEmbed],
           });
 
@@ -186,12 +197,9 @@ module.exports = {
           sameElse: 'DD/MM/YYYY',
         });
         const embed = new MessageEmbed()
-          .setTitle('Reminders')
-          .setDescription('Here are your reminders')
-          .addFields(
-            { name: 'Message', value: reminder.message },
-            { name: 'Scheduled Time', value: formatted }
-          );
+          .setTitle(`⏰ ${interaction.user.username}'s Reminders ⏰`)
+          .setThumbnail('https://c.tenor.com/FgiJeSZ3fE0AAAAC/sleep-anime.gif')
+          .addField(formatted, `\`\`\`fix\n${reminder.message}\n\`\`\``);
         pages.push(embed);
       });
 
@@ -220,7 +228,6 @@ module.exports = {
 
       collector.on('collect', async (i) => {
         const { timeoutId } = remindersMadeByInteractionUser[page];
-
         switch (i.customId) {
           case 'previousbtn':
             page = page > 0 ? (page -= 1) : pages.length - 1;
@@ -232,13 +239,13 @@ module.exports = {
             if (pages.length === 0) {
               break;
             }
-
             clearTimeout(reminderTimeouts[timeoutId]);
             Reminder.destroy({
               where: {
                 timeoutId,
               },
             });
+            remindersMadeByInteractionUser.splice(page, 1);
             pages.splice(page, 1);
 
             if (page === pages.length) {
@@ -260,16 +267,18 @@ module.exports = {
           });
           collector.resetTimer();
         } else {
+          const noReminders = new MessageEmbed().setDescription(
+            "You've deleted all your reminders!"
+          );
           await i.editReply({
-            content: 'There are no more reminders!',
-            embeds: [],
+            embeds: [noReminders],
             components: [],
           });
         }
       });
 
       collector.on('end', (_, reason) => {
-        if (reason === 'time') {
+        if (pages.length > 0 && reason === 'time') {
           const disabledRow = new MessageActionRow().addComponents(
             previousButton.setDisabled(true),
             deleteButton.setDisabled(true),

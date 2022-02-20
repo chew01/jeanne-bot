@@ -33,18 +33,25 @@ exports.restoreReminders = async (client) => {
   remindersToRestore.forEach((reminder) => {
     const channel = client.channels.cache.get(reminder.channelId);
     const messageEmbed = new MessageEmbed()
-      .setTitle('Hey! Your reminder is here!')
-      .setDescription(
-        `You requested a reminder ${dayjs(reminder.createdTime).from(
+      .setTitle('✅ Reminder! ✅')
+      .setColor('#ff62bb')
+      .setThumbnail('https://c.tenor.com/676zsRffINcAAAAi/kiryu-coco-alarm.gif')
+      .setFooter({
+        text: `You created this reminder on ${dayjs(
+          reminder.createdTime
+        ).format('llll')} (${dayjs(reminder.createdTime).from(
           reminder.scheduledTime
-        )}.`
-      )
-      .addField('Description', reminder.message);
+        )})`,
+      })
+      .addField(
+        `${dayjs(reminder.scheduledTime).format('llll')}`,
+        `\`\`\`fix\n${reminder.message}\n\`\`\``
+      );
     const duration = reminder.scheduledTime - Date.now();
 
     this.reminderTimeouts[reminder.timeoutId] = setTimeout(() => {
       channel.send({
-        content: `Guess what, <@${reminder.userId}>?`,
+        content: `<@${reminder.userId}>`,
         embeds: [messageEmbed],
       });
 
