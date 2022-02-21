@@ -2,7 +2,7 @@ const dayjs = require('dayjs');
 const relativeTime = require('dayjs/plugin/relativeTime');
 const { MessageEmbed } = require('discord.js');
 const { Op } = require('sequelize');
-const { Reminder } = require('./sequelize');
+const { Reminder, TotoDrawSchedule } = require('./sequelize');
 
 dayjs.extend(relativeTime);
 
@@ -65,5 +65,48 @@ exports.restoreReminders = async (client) => {
 
   console.log(
     `${restoreCount}/${remindersToRestore.length} reminder timeouts restored!`
+  );
+};
+
+exports.totoTimeouts = {};
+
+// Restore toto draw timeouts after load
+exports.restoreTotoDraws = async (client) => {
+  // Clear lapsed schedules
+  await TotoDrawSchedule.destroy({
+    where: {
+      scheduledTime: {
+        [Op.lt]: Date.now(),
+      },
+    },
+  });
+
+  const drawsToRestore = await TotoDrawSchedule.findAll({
+    where: {
+      scheduledTime: {
+        [Op.gt]: Date.now(),
+      },
+    },
+  });
+
+  let restoreCount = 0;
+
+  drawsToRestore.forEach((draw) => {
+    const { scheduledTime, timeoutId, channelId, userId, guildId } = draw;
+    const duration = scheduledTime - Date.now();
+
+    this.totoTimeouts[timeoutId] = setTimeout(() => {
+      client.emit('draw', client, channelId, guildId, userId);
+
+      TotoDrawSchedule.destroy({
+        where: { timeoutId },
+      });
+    }, duration);
+
+    restoreCount += 1;
+  });
+
+  console.log(
+    `${restoreCount}/${drawsToRestore.length} TOTO draw timeouts restored!`
   );
 };

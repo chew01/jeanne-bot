@@ -7,8 +7,8 @@ const sequelize = new Sequelize('database', 'user', 'password', {
   storage: 'database.sqlite',
 });
 
-const Ticket = sequelize.define('ticket', {
-  userID: {
+const TotoTicket = sequelize.define('tototicket', {
+  userId: {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
@@ -19,7 +19,7 @@ const Ticket = sequelize.define('ticket', {
   },
 });
 
-const Draw = sequelize.define('draw', {
+const TotoDraw = sequelize.define('totodraw', {
   date: {
     type: DataTypes.DATE,
     allowNull: false,
@@ -27,6 +27,43 @@ const Draw = sequelize.define('draw', {
   },
   results: {
     type: DataTypes.ARRAY(DataTypes.INTEGER),
+  },
+  guildId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  winners: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  winnerTickets: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+});
+
+const TotoDrawSchedule = sequelize.define('totodrawschedule', {
+  scheduledTime: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    unique: true,
+  },
+  timeoutId: {
+    type: DataTypes.UUIDV4,
+    allowNull: false,
+    unique: true,
+  },
+  channelId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  userId: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
+  guildId: {
+    type: DataTypes.STRING,
+    allowNull: false,
   },
 });
 
@@ -69,4 +106,4 @@ sequelize.sync();
   }
 })();
 
-module.exports = { Ticket, Draw, Reminder };
+module.exports = { TotoTicket, TotoDraw, TotoDrawSchedule, Reminder };

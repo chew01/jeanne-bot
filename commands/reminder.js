@@ -137,7 +137,7 @@ module.exports = {
         });
 
         return interaction.reply({
-          content: `Added a new reminder! It will come ${dayjs(
+          content: `Added a new reminder! It will arrive ${dayjs(
             scheduledTime
           ).from(createdTime)}`,
           ephemeral: true,
