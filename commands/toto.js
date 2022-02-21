@@ -16,12 +16,12 @@ module.exports = {
     .setDescription('Access TOTO commands.')
     .addSubcommand((subcommand) =>
       subcommand
-        .setName('conductdraw')
+        .setName('forcedraw')
         .setDescription('Forces a draw to be conducted.')
     )
     .addSubcommand((subcommand) =>
       subcommand
-        .setName('draw')
+        .setName('info')
         .setDescription('Shows statistics about the ongoing TOTO draw.')
     )
     .addSubcommand((subcommand) =>
@@ -79,7 +79,7 @@ module.exports = {
     )
     .addSubcommand((subcommand) =>
       subcommand
-        .setName('scheduledraw')
+        .setName('schedule')
         .setDescription('Schedules a TOTO draw.')
         .addStringOption((option) =>
           option
@@ -97,8 +97,8 @@ module.exports = {
     ),
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
-    if (subcommand === 'conductdraw') {
-      interaction.client.emit(
+    if (subcommand === 'forcedraw') {
+      return interaction.client.emit(
         'draw',
         interaction.client,
         interaction.channelId,
@@ -106,7 +106,7 @@ module.exports = {
         interaction.user.id
       );
     }
-    if (subcommand === 'draw') {
+    if (subcommand === 'info') {
       // Scheduled draws
       const scheduledDrawsInInteractionGuild = await TotoDrawSchedule.findAll({
         where: {
@@ -161,7 +161,7 @@ module.exports = {
       }
 
       const drawEmbed = new MessageEmbed()
-        .setTitle('TOTO Draw Statistics!')
+        .setTitle('🎲 TOTO Draw Statistics! 🎲')
         .setThumbnail('https://media.giphy.com/media/dvgefaMHmaN2g/giphy.gif')
         .addField('Upcoming draws', scheduledDraws)
         .addFields(
@@ -218,7 +218,7 @@ module.exports = {
         return interaction.reply('Ticket could not be added to the database!');
       }
     }
-    if (subcommand === 'scheduledraw') {
+    if (subcommand === 'schedule') {
       const timeRaw = interaction.options.getString('time');
       const dateRaw = interaction.options.getString('date');
 

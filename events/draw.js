@@ -70,7 +70,7 @@ module.exports = {
       });
       await TotoTicket.destroy({ truncate: true });
       const embed = new MessageEmbed()
-        .setTitle(`TOTO - Draw #${drawsSoFarInServer + 1}`)
+        .setTitle(`🎲 TOTO - Draw #${drawsSoFarInServer + 1} 🎲`)
         .addFields(
           {
             name: 'Winning Numbers',
