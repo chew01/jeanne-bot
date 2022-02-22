@@ -11,10 +11,13 @@ const TotoTicket = sequelize.define('tototicket', {
   userId: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
   },
   numbers: {
     type: DataTypes.ARRAY(DataTypes.INTEGER),
+    allowNull: false,
+  },
+  guildId: {
+    type: DataTypes.STRING,
     allowNull: false,
   },
 });

@@ -1,6 +1,7 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { MessageEmbed } = require('discord.js');
 const dayjs = require('dayjs');
+const _ = require('lodash');
 const localizedFormat = require('dayjs/plugin/localizedFormat');
 const calendar = require('dayjs/plugin/calendar');
 const { v4: uuidv4 } = require('uuid');
@@ -28,52 +29,12 @@ module.exports = {
       subcommand
         .setName('ticket')
         .setDescription('Pick 6 numbers for your daily TOTO ticket.')
-        .addIntegerOption((option) =>
+        .addStringOption((option) =>
           option
-            .setName('first_number')
-            .setDescription('First number to be added')
-            .setMinValue(1)
-            .setMaxValue(49)
-            .setRequired(true)
-        )
-        .addIntegerOption((option) =>
-          option
-            .setName('second_number')
-            .setDescription('Second number to be added')
-            .setMinValue(1)
-            .setMaxValue(49)
-            .setRequired(true)
-        )
-        .addIntegerOption((option) =>
-          option
-            .setName('third_number')
-            .setDescription('Third number to be added')
-            .setMinValue(1)
-            .setMaxValue(49)
-            .setRequired(true)
-        )
-        .addIntegerOption((option) =>
-          option
-            .setName('fourth_number')
-            .setDescription('Fourth number to be added')
-            .setMinValue(1)
-            .setMaxValue(49)
-            .setRequired(true)
-        )
-        .addIntegerOption((option) =>
-          option
-            .setName('fifth_number')
-            .setDescription('Fifth number to be added')
-            .setMinValue(1)
-            .setMaxValue(49)
-            .setRequired(true)
-        )
-        .addIntegerOption((option) =>
-          option
-            .setName('sixth_number')
-            .setDescription('Sixth number to be added')
-            .setMinValue(1)
-            .setMaxValue(49)
+            .setName('numbers')
+            .setDescription(
+              'Enter 6 different numbers from 1 to 49, with a space between each of them!'
+            )
             .setRequired(true)
         )
     )
@@ -94,17 +55,33 @@ module.exports = {
               'Set the draw date in DD/MM/YY format. Leave blank if meant for today.'
             )
         )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('me')
+        .setDescription('Shows your current TOTO ticket in this server.')
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName('quickpick')
+        .setDescription(
+          'Let the system pick 6 numbers for your daily TOTO ticket.'
+        )
     ),
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
     if (subcommand === 'forcedraw') {
-      return interaction.client.emit(
+      interaction.client.emit(
         'draw',
         interaction.client,
         interaction.channelId,
         interaction.guildId,
         interaction.user.id
       );
+      return interaction.reply({
+        content: 'Forced a draw to be conducted!',
+        ephemeral: true,
+      });
     }
     if (subcommand === 'info') {
       // Scheduled draws
@@ -139,6 +116,7 @@ module.exports = {
         order: [['date', 'DESC']],
       });
       let previousDraw = '```fix\n';
+      let previousDrawAdditional = '```diff\n- N/A\n```';
       let previousDrawTime = 'N/A';
       let previousWinners = 'N/A';
       let previousWinnerTickets = 'N/A';
@@ -153,6 +131,9 @@ module.exports = {
             previousDraw += `${number} `;
           });
         previousDraw += '\n```';
+        previousDrawAdditional = `\`\`\`diff\n+ ${
+          previousDrawInInteractionGuild[0].results.split(',')[6]
+        }\n\`\`\``;
         previousDrawTime = dayjs(previousDrawInInteractionGuild[0].date).format(
           'llll'
         );
@@ -168,9 +149,7 @@ module.exports = {
           { name: 'Previous draw results', value: previousDraw, inline: true },
           {
             name: 'Additional',
-            value: `\`\`\`diff\n+ ${
-              previousDrawInInteractionGuild[0].results.split(',')[6]
-            }\n\`\`\``,
+            value: previousDrawAdditional,
             inline: true,
           },
           { name: '\u200B', value: '\u200B', inline: true },
@@ -186,36 +165,67 @@ module.exports = {
       return interaction.reply({ embeds: [drawEmbed] });
     }
     if (subcommand === 'ticket') {
-      const params = [
-        'first_number',
-        'second_number',
-        'third_number',
-        'fourth_number',
-        'fifth_number',
-        'sixth_number',
-      ];
-      const results = params.map((number) =>
-        interaction.options.getInteger(number)
-      );
-      if (!new Set(results).size === results.length) {
-        return interaction.reply(
-          'You used the same number more than once! Try again.'
-        );
+      const results = interaction.options
+        .getString('numbers')
+        .trim()
+        .split(' ')
+        .filter((number) => number !== '')
+        .map(Number);
+      if (results.includes(NaN)) {
+        return interaction.reply({
+          content: "You entered something that isn't a number! Try again.",
+          ephemeral: true,
+        });
       }
+      if (results.length !== 6) {
+        return interaction.reply({
+          content: 'You did not enter 6 numbers! Try again.',
+          ephemeral: true,
+        });
+      }
+      if (results.some((number) => number < 1 || number > 49)) {
+        return interaction.reply({
+          content: 'All numbers must be from 1 to 49! Try again.',
+          ephemeral: true,
+        });
+      }
+      if (!new Set(results).size === results.length) {
+        return interaction.reply({
+          content: 'You used the same number more than once! Try again.',
+          ephemeral: true,
+        });
+      }
+
+      const ticketsThatUserCreatedInInteractionGuild = await TotoTicket.findAll(
+        {
+          where: {
+            userId: interaction.user.id,
+            guildId: interaction.guildId,
+          },
+        }
+      );
+      if (ticketsThatUserCreatedInInteractionGuild.length > 0) {
+        return interaction.reply({
+          content: 'You have already bought a ticket today!',
+          ephemeral: true,
+        });
+      }
+
       const sortedTicket = results.sort((a, b) => a - b);
       try {
         await TotoTicket.create({
           userId: interaction.user.id,
           numbers: sortedTicket,
+          guildId: interaction.guildId,
         });
         return interaction.reply(
           'Your ticket has been registered successfully!'
         );
       } catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-          return interaction.reply('You have already bought a ticket today!');
-        }
-        return interaction.reply('Ticket could not be added to the database!');
+        return interaction.reply({
+          content: 'Ticket could not be added to the database!',
+          ephemeral: true,
+        });
       }
     }
     if (subcommand === 'schedule') {
@@ -289,7 +299,6 @@ module.exports = {
           content: `Scheduled a new draw ${dayjs(scheduledTime).from(
             new Date()
           )}`,
-          ephemeral: true,
         });
       } catch (error) {
         return interaction.reply({
@@ -298,8 +307,64 @@ module.exports = {
         });
       }
     }
+    if (subcommand === 'me') {
+      const currentTicket = await TotoTicket.findAll({
+        where: {
+          userId: interaction.user.id,
+          guildId: interaction.guildId,
+        },
+      });
+      if (currentTicket.length === 0) {
+        return interaction.reply({
+          content:
+            "You haven't bought a ticket today! Use the /toto ticket command to get one!",
+          ephemeral: true,
+        });
+      }
+      const currentTicketString = currentTicket[0].numbers.replaceAll(',', ' ');
+      return interaction.reply({
+        content: `Your current ticket is:\n\`${currentTicketString}\``,
+        ephemeral: true,
+      });
+    }
+    if (subcommand === 'quickpick') {
+      const ticketsThatUserCreatedInInteractionGuild = await TotoTicket.findAll(
+        {
+          where: {
+            userId: interaction.user.id,
+            guildId: interaction.guildId,
+          },
+        }
+      );
+      if (ticketsThatUserCreatedInInteractionGuild.length > 0) {
+        return interaction.reply({
+          content: 'You have already bought a ticket today!',
+          ephemeral: true,
+        });
+      }
+      const array = _.range(1, 50);
+      const sortedTicket = _.shuffle(array)
+        .slice(0, 6)
+        .sort((a, b) => a - b);
+
+      try {
+        await TotoTicket.create({
+          userId: interaction.user.id,
+          numbers: sortedTicket,
+          guildId: interaction.guildId,
+        });
+        return interaction.reply(
+          'Your ticket has been registered successfully!'
+        );
+      } catch (error) {
+        return interaction.reply({
+          content: 'Ticket could not be added to the database!',
+          ephemeral: true,
+        });
+      }
+    }
     return interaction.reply({
-      content: 'Forced a draw to be conducted!',
+      content: 'Subcommand does not exist!',
       ephemeral: true,
     });
   },

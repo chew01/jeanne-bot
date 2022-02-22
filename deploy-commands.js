@@ -29,6 +29,14 @@ const rest = new REST({ version: '9' }).setToken(process.env.BOT_TOKEN);
       { body: commands }
     );
 
+    await rest.put(
+      Routes.applicationGuildCommands(
+        process.env.CLIENT_ID,
+        process.env.GUILD_ID_2
+      ),
+      { body: commands }
+    );
+
     console.log('Successfully added application (/) commands');
   } catch (error) {
     console.error(error);
