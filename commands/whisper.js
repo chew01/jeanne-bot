@@ -4,7 +4,7 @@ const { MessageActionRow, MessageButton, MessageEmbed } = require('discord.js');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('whisper')
-    .setDescription('Whisper to another user.')
+    .setDescription('Whispers to another user.')
     .addUserOption((option) =>
       option
         .setName('user')
@@ -23,7 +23,7 @@ module.exports = {
     const message = interaction.options.getString('message');
 
     const embed = new MessageEmbed()
-      .setColor('BLUE')
+      .setColor('AQUA ')
       .setDescription(`<@${sender}> whispered to <@${user.id}>!`);
     const button = new MessageButton()
       .setCustomId('receive')
@@ -31,24 +31,31 @@ module.exports = {
       .setEmoji('📨')
       .setStyle('PRIMARY');
 
+    if (interaction.deferred === false) {
+      await interaction.deferReply();
+    }
+
+    const notif = await interaction.editReply({
+      content: `<@${user.id}>`,
+      embeds: [embed],
+      components: [new MessageActionRow().addComponents(button)],
+    });
     const filter = (i) => i.customId === 'receive' && i.user.id === user.id;
-    const collector = interaction.channel.createMessageComponentCollector({
+    const collector = notif.createMessageComponentCollector({
       filter,
       max: 1,
     });
+
     collector.on('collect', async (i) => {
       await i.update({
         components: [
           new MessageActionRow().addComponents(button.setDisabled(true)),
         ],
       });
-      await i.followUp({ content: message, ephemeral: true });
-    });
-
-    return interaction.reply({
-      content: `<@${user.id}>`,
-      embeds: [embed],
-      components: [new MessageActionRow().addComponents(button)],
+      await i.followUp({
+        content: `<@${interaction.user.id}>: ${message}`,
+        ephemeral: true,
+      });
     });
   },
 };

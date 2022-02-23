@@ -23,7 +23,9 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('set')
-        .setDescription('Set a reminder.')
+        .setDescription(
+          'Sets a reminder with a specified time and message. You will be pinged in the same channel.'
+        )
         .addStringOption((option) =>
           option
             .setName('reminder')
@@ -48,7 +50,9 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('list')
-        .setDescription("Receive a list of all the reminders you've set.")
+        .setDescription(
+          'Lists all the reminders you have set. You can delete reminders from the list.'
+        )
     ),
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
@@ -101,7 +105,7 @@ module.exports = {
 
       const messageEmbed = new MessageEmbed()
         .setTitle('✅ Reminder! ✅')
-        .setColor('#ff62bb')
+        .setColor('AQUA')
         .setThumbnail(
           'https://c.tenor.com/676zsRffINcAAAAi/kiryu-coco-alarm.gif'
         )
@@ -223,7 +227,7 @@ module.exports = {
           i.customId === 'nextbtn');
       const collector = await currentPage.createMessageComponentCollector({
         filter,
-        time: 60000,
+        time: 30000,
       });
 
       collector.on('collect', async (i) => {

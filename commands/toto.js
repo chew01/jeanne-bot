@@ -18,17 +18,21 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('forcedraw')
-        .setDescription('Forces a draw to be conducted.')
+        .setDescription('Forces a TOTO draw to be conducted in this server.')
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName('info')
-        .setDescription('Shows statistics about the ongoing TOTO draw.')
+        .setDescription(
+          'Shows statistics about previous and scheduled TOTO draws in this server.'
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand
         .setName('ticket')
-        .setDescription('Pick 6 numbers for your daily TOTO ticket.')
+        .setDescription(
+          'Pick 6 numbers from 1 to 49 to create a TOTO ticket for the next draw in this server.'
+        )
         .addStringOption((option) =>
           option
             .setName('numbers')
@@ -41,7 +45,7 @@ module.exports = {
     .addSubcommand((subcommand) =>
       subcommand
         .setName('schedule')
-        .setDescription('Schedules a TOTO draw.')
+        .setDescription('Schedules a TOTO draw in this server.')
         .addStringOption((option) =>
           option
             .setName('time')
@@ -65,7 +69,7 @@ module.exports = {
       subcommand
         .setName('quickpick')
         .setDescription(
-          'Let the system pick 6 numbers for your daily TOTO ticket.'
+          'Let the system pick 6 numbers for your TOTO ticket in this server.'
         )
     ),
   async execute(interaction) {
