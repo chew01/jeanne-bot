@@ -23,7 +23,7 @@ module.exports = {
     const message = interaction.options.getString('message');
 
     const embed = new MessageEmbed()
-      .setColor('AQUA ')
+      .setColor('AQUA')
       .setDescription(`<@${sender}> whispered to <@${user.id}>!`);
     const button = new MessageButton()
       .setCustomId('receive')
