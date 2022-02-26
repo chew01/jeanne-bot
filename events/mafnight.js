@@ -1,11 +1,17 @@
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const _ = require('lodash');
-const { mafiaRoles, getNightAction } = require('../data/mafville');
+const {
+  mafiaRoles,
+  getNightAction,
+  getNightActionVerb,
+  getNightActionChangedVerb,
+} = require('../data/mafville');
 
 module.exports = {
   name: 'mafnight',
   once: false,
-  async execute(client, users, gameChannel, mafChannel, dayCount) {
+  async execute(client, playerObjects, gameChannel, mafChannel, dayCount) {
+    // Send phase start message with a button to get access to night action
     let phaseCountdown = 35;
     const nightEmbed = new MessageEmbed()
       .setTitle(`Current Phase: Night ${dayCount}`)
@@ -16,7 +22,6 @@ module.exports = {
         name: 'The sun will rise in:',
         value: `${phaseCountdown} seconds`,
       });
-
     const nightActionOpener = new MessageActionRow().addComponents(
       new MessageButton()
         .setCustomId('opennightaction')
@@ -29,7 +34,8 @@ module.exports = {
       components: [nightActionOpener],
     });
 
-    users.forEach((user) => {
+    // Remove all players permissions to talk in game channel, while enabling mafia members to talk in mafia channel
+    playerObjects.forEach((user) => {
       gameChannel.permissionOverwrites.edit(user.user.id, {
         SEND_MESSAGES: false,
       });
@@ -41,17 +47,23 @@ module.exports = {
       }
     });
 
-    const actions = [];
+    // Create collector for night action access button
     const nightMessageFilter = (i) => i.customId === 'opennightaction';
-
     const nightMessageCollector = nightMessage.createMessageComponentCollector({
       nightMessageFilter,
       time: 35000,
     });
 
+    const actions = [];
+
+    // On collect, get night action of the interacting user
     nightMessageCollector.on('collect', async (i) => {
-      const playerObj = _.find(users, (user) => user.user === i.user);
-      const nightActionRow = getNightAction(users, playerObj.role, i.user);
+      const playerObj = _.find(playerObjects, (user) => user.user === i.user);
+      const nightActionRow = getNightAction(
+        playerObjects,
+        playerObj.role,
+        playerObj
+      );
 
       if (!nightActionRow) {
         await i.reply({
@@ -65,24 +77,56 @@ module.exports = {
           fetchReply: true,
         });
 
+        // Create collector for night action, maximum 1 collect, time out in 35 seconds
         const nightActionCollector =
-          nightActionReply.createMessageComponentCollector({ max: 1 });
-
-        nightActionCollector.on('collect', async (inte) => {
-          const action = {
-            playerObj,
-            values: inte.values,
-          };
-
-          actions.push(action);
-
-          i.editReply({
-            content: `You have chosen to target <@${inte.values[0]} tonight.`,
+          nightActionReply.createMessageComponentCollector({
+            max: 1,
+            time: 35000,
           });
+
+        // On collect, create action object with player object and selected target, if action already exists, replace it, else add the new action to actions array
+        nightActionCollector.on('collect', async (inte) => {
+          const existingActionIndex = _.findIndex(
+            actions,
+            (action) => action.playerObj === playerObj
+          );
+
+          if (existingActionIndex > -1) {
+            actions[existingActionIndex] = { playerObj, targets: inte.values };
+            i.editReply({
+              content: getNightActionChangedVerb(
+                playerObj.role,
+                inte.values[0]
+              ),
+              components: [],
+            });
+          } else {
+            const action = { playerObj, targets: inte.values };
+            actions.push(action);
+            i.editReply({
+              content: getNightActionVerb(playerObj.role, inte.values[0]),
+              components: [],
+            });
+          }
         });
       }
     });
 
+    nightMessageCollector.on('end', (collected, reason) => {
+      if (reason === 'time') {
+        nightMessage.edit({
+          embeds: [
+            nightEmbed.setFields({
+              name: 'The sun will rise in:',
+              value: `${phaseCountdown} seconds`,
+            }),
+          ],
+          components: [],
+        });
+      }
+    });
+
+    // Set Interval to countdown 35 seconds to dawn, with interval of 5 seconds
     const phaseCountdownInterval = setInterval(async () => {
       if (phaseCountdown > 0) {
         phaseCountdown -= 5;
@@ -95,12 +139,13 @@ module.exports = {
           ],
         });
       }
+      // Upon countdown end, clear interval and emit Logic event
       if (phaseCountdown === 0) {
         clearInterval(phaseCountdownInterval);
         client.emit(
           'maflogic',
           client,
-          users,
+          playerObjects,
           gameChannel,
           mafChannel,
           dayCount,

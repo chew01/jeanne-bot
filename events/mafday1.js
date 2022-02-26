@@ -3,16 +3,16 @@ const { MessageEmbed } = require('discord.js');
 module.exports = {
   name: 'mafday1',
   once: false,
-  async execute(client, users, gameChannel, mafChannel) {
-    const dayCount = 1;
+  async execute(client, playerObjects, gameChannel, mafChannel) {
+    // Enable all players to talk in game channel, and send phase start message
     let roleString = '';
-    users.forEach((user) => {
+    playerObjects.forEach((user) => {
       roleString += `${user.role}\n`;
       gameChannel.permissionOverwrites.edit(user.user.id, {
         SEND_MESSAGES: true,
       });
     });
-
+    const dayCount = 1;
     let phaseCountdown = 15;
     const day1Embed = new MessageEmbed()
       .setTitle(`Current Phase: Day ${dayCount}`)
@@ -25,9 +25,9 @@ module.exports = {
           inline: true,
         }
       );
-
     const day1Message = await gameChannel.send({ embeds: [day1Embed] });
 
+    // Set Interval to countdown 15 seconds to nightfall, with interval of 5 seconds
     const phaseCountdownInterval = setInterval(async () => {
       if (phaseCountdown > 0) {
         phaseCountdown -= 5;
@@ -44,12 +44,13 @@ module.exports = {
           ],
         });
       }
+      // Upon countdown end, clear interval and emit Night event
       if (phaseCountdown === 0) {
         clearInterval(phaseCountdownInterval);
         client.emit(
           'mafnight',
           client,
-          users,
+          playerObjects,
           gameChannel,
           mafChannel,
           dayCount
