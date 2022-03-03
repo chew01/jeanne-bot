@@ -16,8 +16,9 @@ module.exports = {
     gameChannel,
     mafChannel,
     dayCount,
-    actions
+    actionsObj
   ) {
+    const actions = Object.values(actionsObj);
     const successfulAttacks = {};
     // Resolve movements
     actions.forEach((action) => {
@@ -180,14 +181,16 @@ module.exports = {
       );
     }
 
-    // Emit day event
-    return client.emit(
-      'mafday',
-      client,
-      playerObjects,
-      gameChannel,
-      mafChannel,
-      dayCount + 1
-    );
+    // Emit day event after 5 seconds wait
+    return setTimeout(() => {
+      client.emit(
+        'mafday',
+        client,
+        playerObjects,
+        gameChannel,
+        mafChannel,
+        dayCount + 1
+      );
+    }, 5000);
   },
 };

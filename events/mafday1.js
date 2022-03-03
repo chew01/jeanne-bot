@@ -17,8 +17,10 @@ module.exports = {
     const day1Embed = new MessageEmbed()
       .setTitle(`Current Phase: Day ${dayCount}`)
       .setDescription('Everyone can speak. No voting can be done today.')
+      .setColor('#fffacc')
+      .setThumbnail('https://freesvg.org/img/Anonymous-Sun.png')
       .addFields(
-        { name: 'Roles', value: roleString, inline: true },
+        { name: 'Roles', value: roleString || 'N/A', inline: true },
         {
           name: 'Night will fall in:',
           value: `${phaseCountdown} seconds`,
@@ -34,7 +36,7 @@ module.exports = {
         await day1Message.edit({
           embeds: [
             day1Embed.setFields(
-              { name: 'Roles', value: roleString, inline: true },
+              { name: 'Roles', value: roleString || 'N/A', inline: true },
               {
                 name: 'Night will fall in:',
                 value: `${phaseCountdown} seconds`,

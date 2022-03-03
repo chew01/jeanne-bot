@@ -29,6 +29,8 @@ module.exports = {
       .setDescription(
         'Nobody can speak in Town. Mafia can speak in their own channel.\nPlayers with night actions can use them.'
       )
+      .setColor('#433b9c')
+      .setThumbnail('https://freesvg.org/img/weather-few-clouds-night.png')
       .addFields({
         name: 'The sun will rise in:',
         value: `${phaseCountdown} seconds`,
@@ -65,7 +67,7 @@ module.exports = {
       time: 35000,
     });
 
-    const actions = [];
+    const actions = {};
 
     // On collect, get night action of the interacting user
     nightMessageCollector.on('collect', async (i) => {
@@ -97,13 +99,9 @@ module.exports = {
 
         // On collect, create action object with player object and selected target, if action already exists, replace it, else add the new action to actions array
         nightActionCollector.on('collect', async (inte) => {
-          const existingActionIndex = _.findIndex(
-            actions,
-            (action) => action.playerObj === playerObj
-          );
-
-          if (existingActionIndex > -1) {
-            actions[existingActionIndex] = { playerObj, targets: inte.values };
+          const existingAction = actions[inte.user.id];
+          if (existingAction) {
+            actions[inte.user.id] = { playerObj, targets: inte.values };
             i.editReply({
               content: getNightActionChangedVerb(
                 playerObj.role,
@@ -112,8 +110,7 @@ module.exports = {
               components: [],
             });
           } else {
-            const action = { playerObj, targets: inte.values };
-            actions.push(action);
+            actions[inte.user.id] = { playerObj, targets: inte.values };
             i.editReply({
               content: getNightActionVerb(playerObj.role, inte.values[0]),
               components: [],

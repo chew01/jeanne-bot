@@ -8,7 +8,7 @@ module.exports = {
   async execute(client, players, gameChannel, mafChannel) {
     // Initialize roles and create a player object for each participating user
     let acknowledged = 0;
-    const roles = getRoles();
+    const roles = getRoles(players.length);
     const playerObjects = [];
 
     let count = 0;
@@ -86,8 +86,8 @@ module.exports = {
         let mafiaUserString = '';
         let mafiaRoleString = '';
 
-        const mafiaUsers = _.filter(playerObjects, (user) =>
-          mafiaRoles.includes(user.role)
+        const mafiaUsers = playerObjects.filter((playerObj) =>
+          mafiaRoles.includes(playerObj.role)
         );
         mafiaUsers.forEach((user) => {
           mafiaUserString += `${user.user}\n`;
