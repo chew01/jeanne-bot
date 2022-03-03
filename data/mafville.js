@@ -2,7 +2,60 @@ const { MessageActionRow, MessageSelectMenu } = require('discord.js');
 const _ = require('lodash');
 
 exports.getRoles = (playerCount) => {
-  const roles = ['Sheriff', 'Mafioso', 'Veteran'];
+  let roles = [];
+  switch (playerCount) {
+    case 7:
+      roles = [
+        'Sheriff',
+        'Veteran',
+        'Townie',
+        'Townie',
+        'Townie',
+        'Mafioso',
+        'Framer',
+      ];
+      break;
+    case 8:
+      roles = [
+        'Sheriff',
+        'Veteran',
+        'Townie',
+        'Townie',
+        'Townie',
+        'Townie',
+        'Mafioso',
+        'Framer',
+      ];
+      break;
+    case 9:
+      roles = [
+        'Sheriff',
+        'Veteran',
+        'Townie',
+        'Townie',
+        'Townie',
+        'Townie',
+        'Mafioso',
+        'Mafioso',
+        'Framer',
+      ];
+      break;
+    case 10:
+      roles = [
+        'Sheriff',
+        'Veteran',
+        'Veteran',
+        'Townie',
+        'Townie',
+        'Townie',
+        'Mafioso',
+        'Mafioso',
+        'Framer',
+      ];
+      break;
+    default:
+      break;
+  }
   const shuffledRoles = _.shuffle(roles);
 
   return shuffledRoles;

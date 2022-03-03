@@ -107,9 +107,15 @@ module.exports = {
 
     const mafville = new MessageEmbed().setTitle('🤠 MafVille').addFields(
       {
+        name: 'help',
+        value:
+          '**/mv help**\n\nShows basic information about how the MafVille game works.\n\nUsage:\n`/mv help`',
+        inline: true,
+      },
+      {
         name: 'start',
         value:
-          '**/mv start**\n\nStart a game of MafVille in this channel with the specified number of players.\n\nUsage:\n`/mv start`\n`<number of players> (7-15)`',
+          '**/mv start**\n\nStart a game of MafVille with the specified number of players.\n\nUsage:\n`/mv start`\n`<number of players>`\n`(7-10)`',
         inline: true,
       },
       {
