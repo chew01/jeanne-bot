@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const { MessageEmbed, MessageActionRow, MessageButton } = require('discord.js');
 const _ = require('lodash');
 const {
@@ -11,6 +12,16 @@ module.exports = {
   name: 'mafnight',
   once: false,
   async execute(client, playerObjects, gameChannel, mafChannel, dayCount) {
+    // Reset changed status from last night (visitedBy, defense, isSuspicious)
+    playerObjects.forEach((playerObj) => {
+      if (!mafiaRoles.includes(playerObj.role)) {
+        playerObj.isSuspicious = false;
+      }
+      playerObj.defense = 0;
+      playerObj.visitedBy = [];
+      playerObj.nightResults = '';
+    });
+
     // Send phase start message with a button to get access to night action
     let phaseCountdown = 35;
     const nightEmbed = new MessageEmbed()
@@ -34,13 +45,13 @@ module.exports = {
       components: [nightActionOpener],
     });
 
-    // Remove all players permissions to talk in game channel, while enabling mafia members to talk in mafia channel
+    // Remove all players permissions to talk in game channel, while enabling living mafia members to talk in mafia channel
     playerObjects.forEach((user) => {
       gameChannel.permissionOverwrites.edit(user.user.id, {
         SEND_MESSAGES: false,
       });
 
-      if (mafiaRoles.includes(user.role)) {
+      if (mafiaRoles.includes(user.role) && !user.isDead) {
         mafChannel.permissionOverwrites.edit(user.user.id, {
           SEND_MESSAGES: true,
         });

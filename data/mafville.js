@@ -2,15 +2,7 @@ const { MessageActionRow, MessageSelectMenu } = require('discord.js');
 const _ = require('lodash');
 
 exports.getRoles = (playerCount) => {
-  const roles = [
-    'Sheriff',
-    'Veteran',
-    'Townie',
-    'Townie',
-    'Townie',
-    'Mafioso',
-    'Framer',
-  ];
+  const roles = ['Sheriff', 'Mafioso', 'Veteran'];
   const shuffledRoles = _.shuffle(roles);
 
   return shuffledRoles;
@@ -29,7 +21,6 @@ exports.initializeRole = (user, role) => {
       isSuspicious: true,
       defense: 0,
       visitedBy: [],
-      lastWill: '',
       nightResults: '',
     };
   }
@@ -41,7 +32,6 @@ exports.initializeRole = (user, role) => {
       isSuspicious: true,
       defense: 0,
       visitedBy: [],
-      lastWill: '',
       nightResults: '',
     };
   }
@@ -53,7 +43,6 @@ exports.initializeRole = (user, role) => {
       isSuspicious: false,
       defense: 0,
       visitedBy: [],
-      lastWill: '',
       nightResults: '',
     };
   }
@@ -65,7 +54,6 @@ exports.initializeRole = (user, role) => {
       isSuspicious: false,
       defense: 0,
       visitedBy: [],
-      lastWill: '',
       nightResults: '',
       alertLeft: 1,
     };
@@ -78,7 +66,6 @@ exports.initializeRole = (user, role) => {
       isSuspicious: false,
       defense: 0,
       visitedBy: [],
-      lastWill: '',
       nightResults: '',
     };
   }
@@ -186,6 +173,44 @@ exports.getNightActionChangedVerb = (role, newTarget) => {
   }
   if (role === 'Veteran') {
     return `You have decided to be ${newTarget} tonight.`;
+  }
+  return null;
+};
+
+exports.checkMafiosoStatus = async (playerObjects, mafChannel) => {
+  const mafiosoAlive = _.find(
+    playerObjects,
+    (playerObj) => playerObj.role === 'Mafioso' && !playerObj.isDead
+  );
+  if (!mafiosoAlive) {
+    const randomMafiaAlivePlayerObj = _.find(
+      playerObjects,
+      (playerObj) =>
+        this.mafiaRoles.includes(playerObj.role) && !playerObj.isDead
+    );
+    if (randomMafiaAlivePlayerObj) {
+      randomMafiaAlivePlayerObj.role = 'Mafioso';
+      await mafChannel.send({
+        content: `The mafioso has died. ${randomMafiaAlivePlayerObj.user} will take their place from now on.`,
+      });
+    }
+  }
+};
+
+exports.checkWinCondition = (playerObjects) => {
+  const checkMafioso = playerObjects.filter(
+    (playerObj) => !playerObj.isDead && this.mafiaRoles.includes(playerObj.role)
+  );
+  const checkTown = playerObjects.filter(
+    (playerObj) =>
+      !playerObj.isDead && !this.mafiaRoles.includes(playerObj.role)
+  );
+
+  if (checkMafioso.length === 0) {
+    return 'town';
+  }
+  if (checkTown.length === 0) {
+    return 'mafia';
   }
   return null;
 };

@@ -1,6 +1,11 @@
+/* eslint-disable no-param-reassign */
 const { MessageActionRow, MessageButton } = require('discord.js');
 const _ = require('lodash');
-const { movingRoles, mafiaRoles } = require('../data/mafville');
+const {
+  movingRoles,
+  checkMafiosoStatus,
+  checkWinCondition,
+} = require('../data/mafville');
 
 module.exports = {
   name: 'maflogic',
@@ -47,7 +52,12 @@ module.exports = {
           if (visitorPlayerObj.defense < 2) {
             visitorPlayerObj.isDead = true; // Kills visitors below defense lv 2
             visitorPlayerObj.nightResults += 'You were killed by a Veteran!\n';
-            _.set(successfulAttacks, visitorPlayerObj.user.id, ['Veteran']);
+            action.playerObj.nightResults += 'You attacked a visitor!';
+            if (successfulAttacks[visitorPlayerObj.user.id]) {
+              successfulAttacks[visitorPlayerObj.user.id].push('Veteran');
+            } else {
+              successfulAttacks[visitorPlayerObj.user.id] = ['Veteran'];
+            }
           }
         });
       }
@@ -74,9 +84,9 @@ module.exports = {
           (playerObj) => playerObj.user.id === targetId
         );
         if (targetPlayerObj.isSuspicious) {
-          action.playerObj.nightResults += 'Your target is suspicious!';
+          action.playerObj.nightResults += 'Your target is suspicious!\n';
         } else {
-          action.playerObj.nightResults += 'Your target is not suspicious.';
+          action.playerObj.nightResults += 'Your target is not suspicious.\n';
         }
       }
     });
@@ -93,30 +103,15 @@ module.exports = {
           targetPlayerObj.isDead = true;
           targetPlayerObj.nightResults +=
             'You were killed by a member of the Mafia!\n';
+          action.playerObj.nightResults += 'You killed your target.\n';
         }
-        _.set(successfulAttacks, targetPlayerObj.user.id, ['Veteran']);
+        if (successfulAttacks[targetPlayerObj.user.id]) {
+          successfulAttacks[targetPlayerObj.user.id].push('Mafioso');
+        } else {
+          successfulAttacks[targetPlayerObj.user.id] = ['Mafioso'];
+        }
       }
     });
-
-    // If there are no more mafioso alive, turn a random mafia into mafioso. Notify mafia channel. If there are no more mafia members, trigger game over event.
-    /*
-    const mafiosoAlive = _.find(
-      playerObjects,
-      (playerObj) => playerObj.role === 'Mafioso' && !playerObj.isDead
-    );
-    if (!mafiosoAlive) {
-      const randomMafiaAlivePlayerObj = _.find(
-        playerObjects,
-        (playerObj) => mafiaRoles.includes(playerObj.role) && !playerObj.isDead
-      );
-      if (!randomMafiaAlivePlayerObj) {
-        client.emit('gameover');
-      }
-      randomMafiaAlivePlayerObj.role = 'Mafioso';
-      randomMafiaAlivePlayerObj.nightResults +=
-        'Your mafioso has died, so you will take his place from now on.';
-    }
-    */
 
     // Night result button
     const nightResultRow = new MessageActionRow().addComponents(
@@ -155,18 +150,38 @@ module.exports = {
     let publicNightResults = '';
     const successfulAttackEntries = Object.entries(successfulAttacks);
     successfulAttackEntries.forEach((successfulAttack) => {
-      const attackedPlayerObj = _.find(
-        playerObjects,
-        (playerObj) => playerObj.user.id === successfulAttack[0]
-      );
-      publicNightResults += `<@${successfulAttack[0]}> died last night. They were killed by ${successfulAttack[1]}. This was their last will: ${attackedPlayerObj.lastWill}`;
+      publicNightResults += `<@${successfulAttack[0]}> died last night. They were killed by ${successfulAttack[1]}.\n`;
     });
     if (!publicNightResults) {
       publicNightResults = 'Nothing happened last night.';
     }
     await gameChannel.send({ content: publicNightResults });
 
-    client.emit(
+    await checkMafiosoStatus(playerObjects, mafChannel);
+    const winCondition = checkWinCondition(playerObjects);
+    if (winCondition === 'mafia') {
+      return client.emit(
+        'mafgameover',
+        client,
+        playerObjects,
+        gameChannel,
+        mafChannel,
+        'mafia'
+      );
+    }
+    if (winCondition === 'town') {
+      return client.emit(
+        'mafgameover',
+        client,
+        playerObjects,
+        gameChannel,
+        mafChannel,
+        'town'
+      );
+    }
+
+    // Emit day event
+    return client.emit(
       'mafday',
       client,
       playerObjects,

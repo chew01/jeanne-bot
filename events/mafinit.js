@@ -83,27 +83,25 @@ module.exports = {
     confirmationCollector.on('end', async (collected, reason) => {
       if (reason === 'userLimit') {
         await confirmation.delete();
-        let mafiaUserString = 'N/A';
-        let mafiaRoleString = 'N/A';
+        let mafiaUserString = '';
+        let mafiaRoleString = '';
 
         const mafiaUsers = _.filter(playerObjects, (user) =>
           mafiaRoles.includes(user.role)
         );
         mafiaUsers.forEach((user) => {
-          mafiaUserString = '';
-          mafiaRoleString = '';
           mafiaUserString += `${user.user}\n`;
           mafiaRoleString += `${user.role}\n`;
         });
 
         const mafiaEmbed = new MessageEmbed()
-          .setTitle('🎩 Welcome to the mafia.')
+          .setTitle('🕵️ Welcome to the mafia.')
           .setDescription(
             'Your goal is to kill anyone who will not submit to the Mafia (e.g. Town).\nYou will only be able to talk in this channel at night.'
           )
           .addFields(
-            { name: 'Player', value: mafiaUserString, inline: true },
-            { name: 'Role', value: mafiaRoleString, inline: true }
+            { name: 'Player', value: mafiaUserString || 'N/A', inline: true },
+            { name: 'Role', value: mafiaRoleString || 'N/A', inline: true }
           );
         await mafChannel.send({ embeds: [mafiaEmbed] });
         client.emit('mafday1', client, playerObjects, gameChannel, mafChannel);
