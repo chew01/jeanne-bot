@@ -22,7 +22,8 @@ module.exports = {
         {
           name: '🎲 TOTO',
           value: '`info` `ticket` `quickpick` `me` `schedule` `forcedraw`',
-        }
+        },
+        { name: '🤠 MafVille', value: '`start` `roles`' }
       )
       .setFooter({
         text: 'This help command will expire in 30 seconds without interaction!',
@@ -104,6 +105,21 @@ module.exports = {
         text: 'This help command will expire in 30 seconds without interaction!',
       });
 
+    const mafville = new MessageEmbed().setTitle('🤠 MafVille').addFields(
+      {
+        name: 'start',
+        value:
+          '**/mv start**\n\nStart a game of MafVille in this channel with the specified number of players.\n\nUsage:\n`/mv start`\n`<number of players> (7-15)`',
+        inline: true,
+      },
+      {
+        name: 'roles',
+        value:
+          '**/mv roles**\n\nShows information about roles currently available in MafVille.\n\nUsage:\n`/mv roles`',
+        inline: true,
+      }
+    );
+
     const menu = new MessageSelectMenu()
       .setCustomId('select')
       .setPlaceholder('Choose a category')
@@ -111,9 +127,10 @@ module.exports = {
         { label: '🔖 General Commands', value: 'general' },
         { label: '⏰ Reminders', value: 'reminder' },
         { label: '🎲 TOTO', value: 'toto' },
+        { label: '🤠 MafVille', value: 'mafville' },
       ]);
 
-    const gallery = { general, reminder, toto };
+    const gallery = { general, reminder, toto, mafville };
 
     if (interaction.deferred === false) {
       await interaction.deferReply();

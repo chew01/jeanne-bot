@@ -72,6 +72,9 @@ module.exports = {
     // On collect, get night action of the interacting user
     nightMessageCollector.on('collect', async (i) => {
       const playerObj = _.find(playerObjects, (user) => user.user === i.user);
+      if (playerObj.isDead) {
+        return i.reply({ content: 'You are already dead!', ephemeral: true });
+      }
       const nightActionRow = getNightAction(
         playerObjects,
         playerObj.role,

@@ -16,7 +16,7 @@ module.exports = {
       subcommand
         .setName('start')
         .setDescription(
-          'Start a game of MafVille in this channel with a specified number of players.'
+          'Start a game of MafVille in this channel with the specified number of players.'
         )
         .addIntegerOption((option) =>
           option

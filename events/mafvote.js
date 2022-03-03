@@ -45,6 +45,8 @@ module.exports = {
         .setDescription(
           `Living players can speak. You may vote to lynch someone using the dropdown bar below. ${votesRequired} votes are required to lynch someone.`
         )
+        .setColor('#ffbd38')
+        .setThumbnail('https://freesvg.org/img/gramzon_Ballot_box.png')
         .addFields(
           { name: 'Players', value: votedPlayerString || 'N/A', inline: true },
           { name: 'Votes', value: votesString || 'N/A', inline: true },
@@ -149,6 +151,9 @@ module.exports = {
               );
               clearInterval(phaseCountdownInterval);
               votingSelectCollector.stop('vote');
+              setTimeout(() => {
+                votingMessage.delete();
+              }, 0);
               client.emit(
                 'mafgallows',
                 client,

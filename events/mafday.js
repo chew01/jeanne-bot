@@ -39,6 +39,8 @@ module.exports = {
       .setDescription(
         'Living players can speak. Voting will begin after discussion phase.'
       )
+      .setColor('#fffacc')
+      .setThumbnail('https://freesvg.org/img/Anonymous-Sun.png')
       .addFields(
         { name: 'Deaths', value: deadPlayers || 'N/A', inline: true },
         { name: 'Roles', value: deadRoles || 'N/A', inline: true },

@@ -21,6 +21,8 @@ module.exports = {
       .setDescription(
         'Living players can speak. You may judge whether the accused is innocent or guilty.\nIf there are more guilty votes than innocent votes, the accused will be hanged.'
       )
+      .setColor('#876113')
+      .setThumbnail('https://freesvg.org/img/podium.png')
       .addFields(
         { name: 'Accused', value: `${accused}`, inline: true },
         {
@@ -112,12 +114,16 @@ module.exports = {
         ).length;
         const guiltyEmbed = new MessageEmbed()
           .setTitle('The accused has been hanged!')
+          .setColor('RED')
+          .setThumbnail('https://freesvg.org/img/noose.png')
           .setDescription(
             `The accused, ${accused}, has been deemed guilty by ${guiltyCount} Guilty against ${innocentCount} Innocent.`
           )
           .addFields({ name: '\u200B', value: selectionString || 'N/A' });
         const innocentEmbed = new MessageEmbed()
           .setTitle('The accused walks off the gallows!')
+          .setColor('GREEN')
+          .setThumbnail('https://freesvg.org/img/studyzazou.png')
           .setDescription(
             `The accused, ${accused}, has been deemed innocent by ${innocentCount} Innocent against ${guiltyCount} Guilty.`
           )
