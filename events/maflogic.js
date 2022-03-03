@@ -151,7 +151,11 @@ module.exports = {
     let publicNightResults = '';
     const successfulAttackEntries = Object.entries(successfulAttacks);
     successfulAttackEntries.forEach((successfulAttack) => {
-      publicNightResults += `<@${successfulAttack[0]}> died last night. They were killed by ${successfulAttack[1]}.\n`;
+      publicNightResults += `<@${
+        successfulAttack[0]
+      }> died last night. They were killed by ${successfulAttack[1]
+        .toString()
+        .replaceAll(',', ', ')}.\n`;
     });
     if (!publicNightResults) {
       publicNightResults = 'Nothing happened last night.';
